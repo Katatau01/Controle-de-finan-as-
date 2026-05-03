@@ -7,21 +7,14 @@
 
 <style>
 body {
+  margin: 0;
+  font-family: Arial;
   background: #0f172a;
   color: white;
-  font-family: Arial;
-  margin: 0;
 }
 
-header {
-  padding: 20px;
-  font-size: 22px;
-  font-weight: bold;
-}
-
-.container {
-  padding: 15px;
-}
+.screen { display: none; padding: 15px; }
+.active { display: block; }
 
 .card {
   background: #1e293b;
@@ -29,8 +22,6 @@ header {
   border-radius: 12px;
   margin-bottom: 10px;
 }
-
-h3 { margin-top: 0; }
 
 input, button {
   width: 100%;
@@ -45,51 +36,83 @@ button {
   font-weight: bold;
 }
 
+.nav {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  display: flex;
+  justify-content: space-around;
+  background: #020617;
+  padding: 10px 0;
+}
+
+.nav button {
+  background: none;
+  color: white;
+}
+
 .meta {
-  font-size: 20px;
   color: #22c55e;
+  font-size: 20px;
 }
 </style>
 </head>
 
 <body>
 
-<header>💸 Controle Inteligente</header>
+<!-- DASHBOARD -->
+<div id="home" class="screen active">
+  <h2>📊 Dashboard</h2>
 
-<div class="container">
-
-<div class="card">
-<h3>Resumo</h3>
-<p>Total Dívidas: R$ <span id="total"></span></p>
-<p>Total Ganho: R$ <span id="ganho"></span></p>
-<p>Falta: R$ <span id="falta"></span></p>
-<p class="meta">Meta diária: <span id="meta"></span></p>
+  <div class="card">
+    <p>Total Dívidas: R$ <span id="total"></span></p>
+    <p>Total Ganho: R$ <span id="ganho"></span></p>
+    <p>Falta: R$ <span id="falta"></span></p>
+    <p class="meta">Meta diária: <span id="meta"></span></p>
+  </div>
 </div>
 
-<div class="card">
-<h3>Adicionar Dívida</h3>
-<input id="nome" placeholder="Nome">
-<input id="valor" type="number" placeholder="Valor">
-<button onclick="addDivida()">Adicionar</button>
+<!-- DÍVIDAS -->
+<div id="dividas" class="screen">
+  <h2>💸 Dívidas</h2>
+
+  <div class="card">
+    <input id="nome" placeholder="Nome da dívida">
+    <input id="valor" type="number" placeholder="Valor">
+    <button onclick="addDivida()">Adicionar</button>
+  </div>
+
+  <div id="lista"></div>
 </div>
 
-<div class="card">
-<h3>Registrar ganho</h3>
-<input id="ganhoDia" type="number" placeholder="Quanto fez hoje">
-<button onclick="addGanho()">Registrar</button>
+<!-- GANHOS -->
+<div id="ganhos" class="screen">
+  <h2>💰 Ganhos</h2>
+
+  <div class="card">
+    <input id="ganhoDia" type="number" placeholder="Quanto fez hoje">
+    <button onclick="addGanho()">Registrar</button>
+  </div>
+
+  <div id="listaGanhos"></div>
 </div>
 
-<div class="card">
-<h3>Dias restantes</h3>
-<input id="dias" type="number" placeholder="Ex: 7">
-<button onclick="render()">Atualizar</button>
+<!-- CONFIG -->
+<div id="config" class="screen">
+  <h2>⚙️ Config</h2>
+
+  <div class="card">
+    <input id="dias" type="number" placeholder="Dias restantes">
+    <button onclick="render()">Atualizar</button>
+  </div>
 </div>
 
-<div class="card">
-<h3>Dívidas</h3>
-<div id="lista"></div>
-</div>
-
+<!-- MENU -->
+<div class="nav">
+  <button onclick="trocar('home')">🏠</button>
+  <button onclick="trocar('dividas')">💸</button>
+  <button onclick="trocar('ganhos')">💰</button>
+  <button onclick="trocar('config')">⚙️</button>
 </div>
 
 <script>
@@ -99,6 +122,11 @@ let ganhos = JSON.parse(localStorage.getItem("ganhos")) || [];
 function salvar() {
   localStorage.setItem("dividas", JSON.stringify(dividas));
   localStorage.setItem("ganhos", JSON.stringify(ganhos));
+}
+
+function trocar(tela) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById(tela).classList.add("active");
 }
 
 function addDivida() {
@@ -137,18 +165,27 @@ function render() {
 
   let lista = document.getElementById("lista");
   lista.innerHTML = "";
-
   dividas.forEach((d, i) => {
     lista.innerHTML += `
       <div class="card">
         ${d.nome} - R$ ${d.valor}
-        <button onclick="remover(${i})">Excluir</button>
+        <button onclick="removerDivida(${i})">Excluir</button>
+      </div>
+    `;
+  });
+
+  let listaGanhos = document.getElementById("listaGanhos");
+  listaGanhos.innerHTML = "";
+  ganhos.forEach((g, i) => {
+    listaGanhos.innerHTML += `
+      <div class="card">
+        Dia ${i+1}: R$ ${g}
       </div>
     `;
   });
 }
 
-function remover(i) {
+function removerDivida(i) {
   dividas.splice(i, 1);
   salvar();
   render();
