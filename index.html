@@ -3,24 +3,34 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Controle Financeiro</title>
+<title>Controle Pro</title>
 
 <style>
 body {
   background: #0f172a;
   color: white;
   font-family: Arial;
-  padding: 15px;
+  margin: 0;
 }
 
-h1 { font-size: 22px; }
+header {
+  padding: 20px;
+  font-size: 22px;
+  font-weight: bold;
+}
+
+.container {
+  padding: 15px;
+}
 
 .card {
   background: #1e293b;
   padding: 15px;
   border-radius: 12px;
-  margin-top: 10px;
+  margin-bottom: 10px;
 }
+
+h3 { margin-top: 0; }
 
 input, button {
   width: 100%;
@@ -32,50 +42,54 @@ input, button {
 
 button {
   background: #22c55e;
-  color: black;
   font-weight: bold;
 }
 
-.red { color: #ef4444; }
-.green { color: #22c55e; }
+.meta {
+  font-size: 20px;
+  color: #22c55e;
+}
 </style>
 </head>
 
 <body>
 
-<h1>💸 Controle Inteligente</h1>
+<header>💸 Controle Inteligente</header>
+
+<div class="container">
 
 <div class="card">
 <h3>Resumo</h3>
-<p>Total Dívidas: R$ <span id="totalDividas">0</span></p>
-<p>Total Pago: R$ <span id="totalPago">0</span></p>
+<p>Total Dívidas: R$ <span id="total"></span></p>
+<p>Total Ganho: R$ <span id="ganho"></span></p>
 <p>Falta: R$ <span id="falta"></span></p>
-<p>Meta por dia: <strong id="metaDia"></strong></p>
+<p class="meta">Meta diária: <span id="meta"></span></p>
 </div>
 
 <div class="card">
 <h3>Adicionar Dívida</h3>
-<input id="nomeDivida" placeholder="Nome">
-<input id="valorDivida" type="number" placeholder="Valor">
-<input id="dataDivida" type="date">
+<input id="nome" placeholder="Nome">
+<input id="valor" type="number" placeholder="Valor">
 <button onclick="addDivida()">Adicionar</button>
 </div>
 
 <div class="card">
-<h3>Registrar ganho do dia</h3>
-<input id="ganhoDia" type="number" placeholder="Quanto você fez hoje">
+<h3>Registrar ganho</h3>
+<input id="ganhoDia" type="number" placeholder="Quanto fez hoje">
 <button onclick="addGanho()">Registrar</button>
 </div>
 
 <div class="card">
 <h3>Dias restantes</h3>
-<input id="diasRestantes" type="number" placeholder="Ex: 7">
-<button onclick="calcular()">Atualizar cálculo</button>
+<input id="dias" type="number" placeholder="Ex: 7">
+<button onclick="render()">Atualizar</button>
 </div>
 
 <div class="card">
-<h3>Minhas Dívidas</h3>
-<div id="listaDividas"></div>
+<h3>Dívidas</h3>
+<div id="lista"></div>
+</div>
+
 </div>
 
 <script>
@@ -88,19 +102,19 @@ function salvar() {
 }
 
 function addDivida() {
-  let nome = document.getElementById("nomeDivida").value;
-  let valor = parseFloat(document.getElementById("valorDivida").value);
-  let data = document.getElementById("dataDivida").value;
+  let nome = document.getElementById("nome").value;
+  let valor = parseFloat(document.getElementById("valor").value);
 
-  if (!nome || !valor) return alert("Preenche tudo");
+  if (!nome || !valor) return alert("Preenche");
 
-  dividas.push({ nome, valor, data });
+  dividas.push({ nome, valor });
   salvar();
   render();
 }
 
 function addGanho() {
   let valor = parseFloat(document.getElementById("ganhoDia").value);
+
   if (!valor) return alert("Valor inválido");
 
   ganhos.push(valor);
@@ -108,41 +122,33 @@ function addGanho() {
   render();
 }
 
-function calcular() {
-  render();
-}
-
 function render() {
-  let totalDividas = dividas.reduce((s, d) => s + d.valor, 0);
-  let totalPago = ganhos.reduce((s, g) => s + g, 0);
-  let falta = totalDividas - totalPago;
+  let total = dividas.reduce((s, d) => s + d.valor, 0);
+  let ganho = ganhos.reduce((s, g) => s + g, 0);
+  let falta = total - ganho;
 
-  let dias = parseInt(document.getElementById("diasRestantes").value) || 1;
+  let dias = parseInt(document.getElementById("dias").value) || 1;
   let meta = falta / dias;
 
-  document.getElementById("totalDividas").innerText = totalDividas.toFixed(2);
-  document.getElementById("totalPago").innerText = totalPago.toFixed(2);
+  document.getElementById("total").innerText = total.toFixed(2);
+  document.getElementById("ganho").innerText = ganho.toFixed(2);
   document.getElementById("falta").innerText = falta.toFixed(2);
+  document.getElementById("meta").innerText = "R$ " + meta.toFixed(2);
 
-  document.getElementById("metaDia").innerText =
-    "R$ " + (meta > 0 ? meta.toFixed(2) : "0.00");
-
-  let lista = document.getElementById("listaDividas");
+  let lista = document.getElementById("lista");
   lista.innerHTML = "";
 
   dividas.forEach((d, i) => {
     lista.innerHTML += `
       <div class="card">
-        ${d.nome} <br>
-        R$ ${d.valor} <br>
-        Vence: ${d.data || "-"}<br>
-        <button onclick="removerDivida(${i})">Excluir</button>
+        ${d.nome} - R$ ${d.valor}
+        <button onclick="remover(${i})">Excluir</button>
       </div>
     `;
   });
 }
 
-function removerDivida(i) {
+function remover(i) {
   dividas.splice(i, 1);
   salvar();
   render();
