@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Controle Financeiro</title>
+
+<style>
+body {
+  background: #0f172a;
+  color: white;
+  font-family: Arial;
+  padding: 15px;
+}
+
+h1 { font-size: 22px; }
+
+.card {
+  background: #1e293b;
+  padding: 15px;
+  border-radius: 12px;
+  margin-top: 10px;
+}
+
+input, button {
+  width: 100%;
+  padding: 10px;
+  margin-top: 5px;
+  border-radius: 8px;
+  border: none;
+}
+
+button {
+  background: #22c55e;
+  color: black;
+  font-weight: bold;
+}
+
+.red { color: #ef4444; }
+.green { color: #22c55e; }
+</style>
+</head>
+
+<body>
+
+<h1>💸 Controle Inteligente</h1>
+
+<div class="card">
+<h3>Resumo</h3>
+<p>Total Dívidas: R$ <span id="totalDividas">0</span></p>
+<p>Total Pago: R$ <span id="totalPago">0</span></p>
+<p>Falta: R$ <span id="falta"></span></p>
+<p>Meta por dia: <strong id="metaDia"></strong></p>
+</div>
+
+<div class="card">
+<h3>Adicionar Dívida</h3>
+<input id="nomeDivida" placeholder="Nome">
+<input id="valorDivida" type="number" placeholder="Valor">
+<input id="dataDivida" type="date">
+<button onclick="addDivida()">Adicionar</button>
+</div>
+
+<div class="card">
+<h3>Registrar ganho do dia</h3>
+<input id="ganhoDia" type="number" placeholder="Quanto você fez hoje">
+<button onclick="addGanho()">Registrar</button>
+</div>
+
+<div class="card">
+<h3>Dias restantes</h3>
+<input id="diasRestantes" type="number" placeholder="Ex: 7">
+<button onclick="calcular()">Atualizar cálculo</button>
+</div>
+
+<div class="card">
+<h3>Minhas Dívidas</h3>
+<div id="listaDividas"></div>
+</div>
+
+<script>
+let dividas = JSON.parse(localStorage.getItem("dividas")) || [];
+let ganhos = JSON.parse(localStorage.getItem("ganhos")) || [];
+
+function salvar() {
+  localStorage.setItem("dividas", JSON.stringify(dividas));
+  localStorage.setItem("ganhos", JSON.stringify(ganhos));
+}
+
+function addDivida() {
+  let nome = document.getElementById("nomeDivida").value;
+  let valor = parseFloat(document.getElementById("valorDivida").value);
+  let data = document.getElementById("dataDivida").value;
+
+  if (!nome || !valor) return alert("Preenche tudo");
+
+  dividas.push({ nome, valor, data });
+  salvar();
+  render();
+}
+
+function addGanho() {
+  let valor = parseFloat(document.getElementById("ganhoDia").value);
+  if (!valor) return alert("Valor inválido");
+
+  ganhos.push(valor);
+  salvar();
+  render();
+}
+
+function calcular() {
+  render();
+}
+
+function render() {
+  let totalDividas = dividas.reduce((s, d) => s + d.valor, 0);
+  let totalPago = ganhos.reduce((s, g) => s + g, 0);
+  let falta = totalDividas - totalPago;
+
+  let dias = parseInt(document.getElementById("diasRestantes").value) || 1;
+  let meta = falta / dias;
+
+  document.getElementById("totalDividas").innerText = totalDividas.toFixed(2);
+  document.getElementById("totalPago").innerText = totalPago.toFixed(2);
+  document.getElementById("falta").innerText = falta.toFixed(2);
+
+  document.getElementById("metaDia").innerText =
+    "R$ " + (meta > 0 ? meta.toFixed(2) : "0.00");
+
+  let lista = document.getElementById("listaDividas");
+  lista.innerHTML = "";
+
+  dividas.forEach((d, i) => {
+    lista.innerHTML += `
+      <div class="card">
+        ${d.nome} <br>
+        R$ ${d.valor} <br>
+        Vence: ${d.data || "-"}<br>
+        <button onclick="removerDivida(${i})">Excluir</button>
+      </div>
+    `;
+  });
+}
+
+function removerDivida(i) {
+  dividas.splice(i, 1);
+  salvar();
+  render();
+}
+
+render();
+</script>
+
+</body>
+</html>
