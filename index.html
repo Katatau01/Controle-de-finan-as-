@@ -51,10 +51,8 @@ button {
   color: white;
 }
 
-.meta {
-  color: #22c55e;
-  font-size: 20px;
-}
+.red { color: #ef4444; }
+.green { color: #22c55e; }
 </style>
 </head>
 
@@ -63,13 +61,7 @@ button {
 <!-- DASHBOARD -->
 <div id="home" class="screen active">
   <h2>📊 Dashboard</h2>
-
-  <div class="card">
-    <p>Total Dívidas: R$ <span id="total"></span></p>
-    <p>Total Ganho: R$ <span id="ganho"></span></p>
-    <p>Falta: R$ <span id="falta"></span></p>
-    <p class="meta">Meta diária: <span id="meta"></span></p>
-  </div>
+  <div id="resumo"></div>
 </div>
 
 <!-- DÍVIDAS -->
@@ -77,8 +69,9 @@ button {
   <h2>💸 Dívidas</h2>
 
   <div class="card">
-    <input id="nome" placeholder="Nome da dívida">
+    <input id="nome" placeholder="Nome">
     <input id="valor" type="number" placeholder="Valor">
+    <input id="data" type="date">
     <button onclick="addDivida()">Adicionar</button>
   </div>
 
@@ -93,26 +86,12 @@ button {
     <input id="ganhoDia" type="number" placeholder="Quanto fez hoje">
     <button onclick="addGanho()">Registrar</button>
   </div>
-
-  <div id="listaGanhos"></div>
 </div>
 
-<!-- CONFIG -->
-<div id="config" class="screen">
-  <h2>⚙️ Config</h2>
-
-  <div class="card">
-    <input id="dias" type="number" placeholder="Dias restantes">
-    <button onclick="render()">Atualizar</button>
-  </div>
-</div>
-
-<!-- MENU -->
 <div class="nav">
   <button onclick="trocar('home')">🏠</button>
   <button onclick="trocar('dividas')">💸</button>
   <button onclick="trocar('ganhos')">💰</button>
-  <button onclick="trocar('config')">⚙️</button>
 </div>
 
 <script>
@@ -132,17 +111,17 @@ function trocar(tela) {
 function addDivida() {
   let nome = document.getElementById("nome").value;
   let valor = parseFloat(document.getElementById("valor").value);
+  let data = document.getElementById("data").value;
 
-  if (!nome || !valor) return alert("Preenche");
+  if (!nome || !valor || !data) return alert("Preenche tudo");
 
-  dividas.push({ nome, valor });
+  dividas.push({ nome, valor, data });
   salvar();
   render();
 }
 
 function addGanho() {
   let valor = parseFloat(document.getElementById("ganhoDia").value);
-
   if (!valor) return alert("Valor inválido");
 
   ganhos.push(valor);
@@ -150,43 +129,66 @@ function addGanho() {
   render();
 }
 
-function render() {
-  let total = dividas.reduce((s, d) => s + d.valor, 0);
-  let ganho = ganhos.reduce((s, g) => s + g, 0);
-  let falta = total - ganho;
-
-  let dias = parseInt(document.getElementById("dias").value) || 1;
-  let meta = falta / dias;
-
-  document.getElementById("total").innerText = total.toFixed(2);
-  document.getElementById("ganho").innerText = ganho.toFixed(2);
-  document.getElementById("falta").innerText = falta.toFixed(2);
-  document.getElementById("meta").innerText = "R$ " + meta.toFixed(2);
-
-  let lista = document.getElementById("lista");
-  lista.innerHTML = "";
-  dividas.forEach((d, i) => {
-    lista.innerHTML += `
-      <div class="card">
-        ${d.nome} - R$ ${d.valor}
-        <button onclick="removerDivida(${i})">Excluir</button>
-      </div>
-    `;
-  });
-
-  let listaGanhos = document.getElementById("listaGanhos");
-  listaGanhos.innerHTML = "";
-  ganhos.forEach((g, i) => {
-    listaGanhos.innerHTML += `
-      <div class="card">
-        Dia ${i+1}: R$ ${g}
-      </div>
-    `;
-  });
+function diasRestantes(data) {
+  let hoje = new Date();
+  let venc = new Date(data);
+  let diff = Math.ceil((venc - hoje) / (1000 * 60 * 60 * 24));
+  return diff > 0 ? diff : 1;
 }
 
-function removerDivida(i) {
-  dividas.splice(i, 1);
+function render() {
+
+  // ordenar por vencimento
+  dividas.sort((a,b) => new Date(a.data) - new Date(b.data));
+
+  let totalPago = ganhos.reduce((s,g)=>s+g,0);
+  let restante = totalPago;
+
+  let lista = document.getElementById("lista");
+  let resumo = document.getElementById("resumo");
+
+  lista.innerHTML = "";
+  resumo.innerHTML = "";
+
+  dividas.forEach((d,i)=>{
+
+    let valorRestante = d.valor;
+
+    if (restante > 0) {
+      if (restante >= valorRestante) {
+        restante -= valorRestante;
+        valorRestante = 0;
+      } else {
+        valorRestante -= restante;
+        restante = 0;
+      }
+    }
+
+    let dias = diasRestantes(d.data);
+    let metaDia = valorRestante / dias;
+
+    lista.innerHTML += `
+      <div class="card">
+        <strong>${d.nome}</strong><br>
+        Total: R$ ${d.valor}<br>
+        Restante: <span class="${valorRestante>0?'red':'green'}">R$ ${valorRestante.toFixed(2)}</span><br>
+        Vence em ${dias} dias<br>
+        Meta/dia: R$ ${metaDia.toFixed(2)}<br>
+        <button onclick="remover(${i})">Excluir</button>
+      </div>
+    `;
+
+    resumo.innerHTML += `
+      <div class="card">
+        ${d.nome} → R$ ${metaDia.toFixed(2)}/dia
+      </div>
+    `;
+  });
+
+}
+
+function remover(i){
+  dividas.splice(i,1);
   salvar();
   render();
 }
